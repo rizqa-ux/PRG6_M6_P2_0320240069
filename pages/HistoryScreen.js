@@ -1,95 +1,97 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, SafeAreaView, StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    ActivityIndicator } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-
-/*const initialHistory = [
-    { id: "1", course: "Web Programming", date: "2026-03-01", status: "Absent", room: "Lab 1", lecturer: "Bpk. Andi" },
-    { id: "2", course: "Database System", date: "2026-03-02", status: "Present", room: "Lab 2", lecturer: "Ibu Rina" },
-];*/
+import React, { useState, useCallback, useContext } from "react";
+import {
+    View, Text, SafeAreaView, StyleSheet, FlatList,
+    TouchableOpacity, ActivityIndicator
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { AuthContext } from '../context/AuthContext';
 
 export default function HistoryScreen({ navigation }) {
-    //const [historyData] = useState(initialHistory);
-    // 1. STATE UNTUK DATA & CONTROL
-    const [historyData, setHistoryData] = useState([]); // Mulai dengan array kosong
+    const { userData } = useContext(AuthContext);
+
+    const [historyData, setHistoryData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [page, setPage] = useState(1); // Melacak halaman keberapa yang dimuat
 
-    // 2. FUNGSI AMBIL DATA (Simulasi API)
-    const fetchAttendanceData = (isInitial = false) => {
-        if (isLoading) return; // Mencegah pemanggilan ganda
+    // Pagination State
+    const [page, setPage] = useState(0);
+    const [isLastPage, setIsLastPage] = useState(false);
+
+    // GANTI DENGAN IP LAPTOP MASING-MASING
+    const BASE_URL = "http://10.1.12.213:8080/api/presensi";
+
+    // FUNGSI GET API DENGAN PAGINATION
+    const fetchAttendanceData = async (targetPage = 0) => {
+        if (isLoading || (isLastPage && targetPage !== 0)) return;
 
         setIsLoading(true);
 
-        // Simulasi delay jaringan selama 1.5 detik
-        setTimeout(() => {
-            const newItems = [];
-            const startIdx = isInitial ? 0 : historyData.length;
+        try {
+            // Memanggil API Spring Boot
+            const response = await fetch(`${BASE_URL}/history/${userData.nim_mhs}?page=${targetPage}&size=10`);
+            const json = await response.json();
 
-            for (let i = 1; i <= 10; i++) {
-                newItems.push({
-                    id: (startIdx + i).toString(),
-                    course: `Mata Kuliah #${startIdx + i}`,
-                    date: "2026-04-14",
-                    status: i % 3 === 0 ? "Absent" : "Present",
-                    room: "Lab 3",
-                    lecturer: "Dosen Pengampu"
-                });
+            // Spring Boot Pageable menyimpan array di dalam properti 'content'
+            const newItems = json.content;
+
+            if (targetPage === 0) {
+                setHistoryData(newItems); // Refresh halaman awal
+            } else {
+                setHistoryData(prev => [...prev, ...newItems]); // Append (Load More)
             }
 
-            // Jika initial (halaman 1), ganti data. Jika tidak, gabungkan (append).
-            setHistoryData(isInitial ? newItems : [...historyData, ...newItems]);
+            setPage(targetPage);
+            setIsLastPage(json.last); // 'last' adalah boolean dari Spring Boot
+
+        } catch (error) {
+            console.error("Gagal tarik data:", error);
+        } finally {
             setIsLoading(false);
             setIsRefreshing(false);
-        }, 1500);
+        }
     };
 
-    // Panggil saat layar pertama kali dibuka
-    useEffect(() => {
-        fetchAttendanceData(true);
-    }, []);
+    // Otomatis refresh saat layar dibuka
+    useFocusEffect(
+        useCallback(() => {
+            fetchAttendanceData(0);
+        }, [])
+    );
 
-    // 3. FUNGSI REFRESH (Tarik dari Atas)
     const onRefresh = () => {
         setIsRefreshing(true);
-        fetchAttendanceData(true); // Reset ke data paling awal
+        fetchAttendanceData(0);
     };
 
-    // 4. FUNGSI LOAD MORE (Tarik dari Bawah)
     const handleLoadMore = () => {
-        // Hanya muat data baru jika data sekarang sudah cukup banyak
-        if (historyData.length >= 10 && !isLoading) {
-            fetchAttendanceData(false);
+        if (!isLastPage && !isLoading) {
+            fetchAttendanceData(page + 1);
         }
     };
 
     const renderItem = ({ item }) => (
-        // SIHIR NAVIGASI: Pindah layar sambil melempar parameter 'item'
         <TouchableOpacity
             style={styles.item}
             onPress={() => navigation.navigate("Detail", { dataPresensi: item })}
         >
             <View style={{ flex: 1 }}>
                 <Text style={styles.course}>{item.course}</Text>
-                <Text style={styles.date}>{item.date}</Text>
+                <Text style={styles.date}>{item.date} | {item.jamPresensi}</Text>
             </View>
             <Text style={item.status === "Present" ? styles.present : styles.absent}>
                 {item.status}
             </Text>
-            <MaterialIcons name="chevron-right" size={24} color="#999" style={{ marginLeft: 10 }} />
+            <MaterialIcons name="chevron-right" size={24} color="#999" style={{marginLeft: 10}} />
         </TouchableOpacity>
     );
 
-    // Indikator Loading di bagian bawah list
     const renderFooter = () => {
         if (!isLoading) return null;
         return (
             <View style={styles.footerLoader}>
                 <ActivityIndicator size="small" color="#0056A0" />
-                <Text style={styles.loaderText}>Memuat riwayat lama...</Text>
+                <Text style={styles.loaderText}>Menarik data dari server...</Text>
             </View>
         );
     };
@@ -98,25 +100,16 @@ export default function HistoryScreen({ navigation }) {
         <SafeAreaView style={styles.container}>
             <FlatList
                 data={historyData}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.id.toString()}
                 renderItem={renderItem}
                 contentContainerStyle={styles.content}
-
-                // --- FITUR UTAMA Practice 2 ---
                 refreshing={isRefreshing}
-                onRefresh={() => {
-                    setIsRefreshing(true);
-                    fetchAttendanceData(true);
-                }}
-                onEndReached={() => {
-                    if (historyData.length >= 10) fetchAttendanceData(false);
-                }}
+                onRefresh={onRefresh}
+                onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderFooter}
-                // ------------------------------
-
                 ListEmptyComponent={
-                    !isLoading && <Text style={styles.emptyText}>Tidak ada riwayat.</Text>
+                    !isLoading && <Text style={styles.emptyText}>Tidak ada riwayat absensi.</Text>
                 }
             />
         </SafeAreaView>

@@ -1,60 +1,101 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MaterialIcons } from '@expo/vector-icons';
+import React, { useContext } from "react";
+import { Text } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MaterialIcons } from "@expo/vector-icons";
 
-import HomeScreen from './pages/HomeScreen';
-import HistoryScreen from './pages/HistoryScreen';
-import DetailScreen from './pages/DetailScreen';
+import { AuthProvider, AuthContext } from "./AuthContext";
+import LoginScreen from "./LoginScreen";
+import HomeScreen from "./HomeScreen";
+import HistoryScreen from "./HistoryScreen";
+import DetailScreen from "./DetailScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Membuat sub-rute Stack untuk area History
+// ================= HISTORY STACK =================
 function HistoryStack() {
     return (
         <Stack.Navigator>
-            {/* Layar pertama di tab history adalah daftar absensi */}
             <Stack.Screen
                 name="HistoryList"
                 component={HistoryScreen}
-                options={{ title: 'Riwayat Absensi' }}
+                options={{ title: "Riwayat Absensi" }}
             />
-            {/* Layar kedua adalah detail (menumpuk di atas list) */}
             <Stack.Screen
                 name="Detail"
                 component={DetailScreen}
-                options={{ title: 'Detail Informasi' }}
+                options={{ title: "Detail Informasi" }}
             />
         </Stack.Navigator>
     );
 }
 
-export default function App() {
+// ================= TAB =================
+function AppTabs() {
+    return (
+        <Tab.Navigator
+            screenOptions={{
+                tabBarActiveTintColor: "#0056A0",
+                headerShown: false,
+            }}
+        >
+            <Tab.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{
+                    tabBarLabel: "Beranda",
+                    tabBarIcon: ({ color }) => (
+                        <MaterialIcons name="home" size={24} color={color} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="HistoryTab"
+                component={HistoryStack}
+                options={{
+                    tabBarLabel: "Riwayat",
+                    tabBarIcon: ({ color }) => (
+                        <MaterialIcons name="history" size={24} color={color} />
+                    ),
+                }}
+            />
+        </Tab.Navigator>
+    );
+}
+
+// ================= AUTH STACK =================
+function AuthStack() {
+    return (
+        <Stack.Navigator>
+            <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+                options={{ headerShown: false }}
+            />
+        </Stack.Navigator>
+    );
+}
+
+// ================= MAIN APP =================
+function MainApp() {
+    const { userData, loading } = useContext(AuthContext);
+
+    if (loading) return <Text>Loading...</Text>;
+
     return (
         <NavigationContainer>
-            <Tab.Navigator screenOptions={{ tabBarActiveTintColor: '#0056A0', headerShown: false }}>
-
-                <Tab.Screen
-                    name="HomeTab"
-                    component={HomeScreen}
-                    options={{
-                        tabBarLabel: 'Beranda',
-                        tabBarIcon: ({ color }) => <MaterialIcons name="home" size={24} color={color} />
-                    }}
-                />
-
-                <Tab.Screen
-                    name="HistoryTab"
-                    component={HistoryStack}
-                    options={{
-                        tabBarLabel: 'Riwayat',
-                        tabBarIcon: ({ color }) => <MaterialIcons name="history" size={24} color={color} />
-                    }}
-                />
-
-            </Tab.Navigator>
+            {userData ? <AppTabs /> : <AuthStack />}
         </NavigationContainer>
+    );
+}
+
+// ================= ROOT =================
+export default function App() {
+    return (
+        <AuthProvider>
+            <MainApp />
+        </AuthProvider>
     );
 }
