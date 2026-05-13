@@ -5,11 +5,11 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
 
-import { AuthProvider, AuthContext } from "./AuthContext";
-import LoginScreen from "./LoginScreen";
-import HomeScreen from "./HomeScreen";
-import HistoryScreen from "./HistoryScreen";
-import DetailScreen from "./DetailScreen";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
+import LoginScreen from "./pages/LoginScreen";
+import HomeScreen from "./pages/HomeScreen";
+import HistoryScreen from "./pages/HistoryScreen";
+import DetailScreen from "./pages/DetailScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
