@@ -10,11 +10,11 @@ import LoginScreen from "./pages/LoginScreen";
 import HomeScreen from "./pages/HomeScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import DetailScreen from "./pages/DetailScreen";
+import AboutScreen from "./pages/AboutScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// ================= HISTORY STACK =================
 function HistoryStack() {
     return (
         <Stack.Navigator>
@@ -32,7 +32,6 @@ function HistoryStack() {
     );
 }
 
-// ================= TAB =================
 function AppTabs() {
     return (
         <Tab.Navigator
@@ -51,6 +50,7 @@ function AppTabs() {
                     ),
                 }}
             />
+
             <Tab.Screen
                 name="HistoryTab"
                 component={HistoryStack}
@@ -61,11 +61,21 @@ function AppTabs() {
                     ),
                 }}
             />
+
+            <Tab.Screen
+                name="About"
+                component={AboutScreen}
+                options={{
+                    tabBarLabel: "Tentang",
+                    tabBarIcon: ({ color }) => (
+                        <MaterialIcons name="info" size={24} color={color} />
+                    ),
+                }}
+            />
         </Tab.Navigator>
     );
 }
 
-// ================= AUTH STACK =================
 function AuthStack() {
     return (
         <Stack.Navigator>
@@ -78,7 +88,6 @@ function AuthStack() {
     );
 }
 
-// ================= MAIN APP =================
 function MainApp() {
     const { userData, loading } = useContext(AuthContext);
 
@@ -91,7 +100,6 @@ function MainApp() {
     );
 }
 
-// ================= ROOT =================
 export default function App() {
     return (
         <AuthProvider>

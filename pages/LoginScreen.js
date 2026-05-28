@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { View, TextInput, Button, Alert } from "react-native";
 import axios from "axios";
-import { AuthContext } from "./AuthContext";
+import { AuthContext } from "../context/AuthContext"
 
 const BASE_URL = "http://10.1.12.213:8080/api/user";
 

@@ -29,7 +29,7 @@ export default function HistoryScreen({ navigation }) {
 
         try {
             // Memanggil API Spring Boot
-            const response = await fetch(`${BASE_URL}/history/${userData.nim_mhs}?page=${targetPage}&size=10`);
+            const response = await fetch(`${BASE_URL}/history/${userData.q}?page=${targetPage}&size=10`);
             const json = await response.json();
 
             // Spring Boot Pageable menyimpan array di dalam properti 'content'
